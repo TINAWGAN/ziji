@@ -1,0 +1,375 @@
+###graphs
+theme_gray()   ###theme with a grey background and white gridlines
+theme_bw(base_size = 12)  ###theme dark on line
+theme_void()  # everything empty
+theme_minimal # no bacground
+
+# main title
+p + theme(plot.title = element_text(family, face="bold", colour, size=12))
+# x axis title 
+p + theme(axis.title.x = element_text(family, face, colour, size))
+# y axis title
+p + theme(axis.title.y = element_text(family, face, colour, size))
+# legend title
+p + theme(legend.title = element_text(family, face, colour, size))
+# legend item labels
+p + theme(legend.text=element_text(family, face, colour, size))
+# border around plotting area
+p +  theme(panel.background=element_text(family, face, colour, size))
+# major, minor grid
+p +  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())	
+# lines along axes
+p + theme( axis.line = element_line(colour = "black")  axis.line.x; axis.line.y 
+# tick labels along axes
+p + theme(axis.text = element_blank()) axis.text.x;axis.text.y
+# caption below the plot (text appearance) 
+p + theme(plot.caption = element_blank())
+
+# family : font family
+# face : font face. Possible values are “plain”, “italic”, “bold” and “bold.italic”
+# colour : text color
+# size : text size in pts
+# hjust : horizontal justification (in [0, 1])
+# vjust : vertical justification (in [0, 1])
+# lineheight : line height. In multi-line text, the lineheight argument is used to change the spacing between lines.
+
+
+
+plot + geom_hline(aes(yintercept=Avg_Renewable, linetype = paste0("All Corporate Issuers\n", percent(Avg_Renewable))),colour = "red")
+### use aes can assign a variable  geom_hline to add horizontal line;
+geom_vline  #add vertical line
+
+scale_linetype_manual(name = "Averages\n(Weighted by\nMarket Share)", values = c(2, 2, 2), guide = guide_legend(override.aes = list(color = c("skyblue", "red", "lightgreen"))))
+### change linetype 
+scale_xxx_manual  #manually change linetype, change color, change shape, change size, fill
+
+
+### adjust the width of x-axis -> use geom_rect  geom_rect is to draw recetangular
+  Data$right = cumsum(Data$`BondMarketShare%`)
+  Data$left = Data$right - Data$`BondMarketShare%`
+  plot <- ggplot(Data)+
+    geom_rect(aes(xmin = left, xmax = right, ymax = `Total`, ymin = 0),
+              fill = rep(c("tan3", "tan2"),length.out=as.numeric(count(Data))))+
+    geom_rect(aes(xmin = left, xmax = right, ymax = `2022RenewablesCap%`, ymin = 0),
+              fill = rep(c("royalblue3", "royalblue2"), length.out=as.numeric(count(Data))))+
+    geom_rect(aes(xmin = left, xmax = right, ymax = 0, ymin = -.05, fill = `HasGreenBond`))+
+    geom_rect(aes(xmin = left, xmax = (left + ((right-left)*`% Green of Issuer's Total`)),
+                  ymax = 0, ymin = -.05), fill = "yellowgreen")+
+    scale_fill_manual(values=c("grey45", "grey", "yellowgreen"),
+                      name = "Bond Types",
+                      labels = c("Non-Green Bond", "Green Bond Issuer,\nNon-Green Bond", "Green Bonds"))+
+    xlab("Share of Total Bonds Outstanding in Power Sector (Width Indicates %)")+
+    ylab("Share of Renewable (ex-hydro) in Total Capacity (%)")+
+    ggtitle("Renewables and Green Bond Issuers\nin the Power Sector (2017)")+
+    scale_y_continuous(labels=percent, expand = c(0,0))+
+    scale_x_continuous(labels=percent, expand = c(0,0))
+### scale_x_continuous and scale_y_continuous are the default scales for continuous x and y aesthetics  
+#scale_y_continuous(name = waiver(), breaks = waiver(),
+#  minor_breaks = waiver(), labels = waiver(), limits = NULL,
+#  expand = waiver(), oob = censor, na.value = NA_real_,
+#  trans = "identity", position = "left", sec.axis = waiver())
+# limit = range
+# break -> where the ticks appear
+# label is to label the break by assign names ""
+rep(x, times = 1, length.out = NA, each = 1)  #  length.out> times   all refers to the length of repetition
+
+
+
+
+
+
+###Pie chart 
+st_eneg$test <- as.numeric(levels(st_eneg$test))[st_eneg$test]
+
+st_eneg$pos = (cumsum(c(0, st_eneg$test)) + c(st_eneg$test / 2, .01))[1:nrow(st_eneg)]
+
+
+ggplot(st_eneg, aes(x="", y=test, fill=sector))+
+  geom_col(color = 'white', width = 1,
+           position = position_stack(reverse = TRUE), 
+           show.legend = TRUE)+
+  ggtitle("Sector Allocation Capacity in 2016 (Non Green Bond)")+
+  coord_polar("y")+
+  geom_text_repel(aes(x = 1.4, y = pos,label = paste0(sector, " ", sprintf("%0.2f", round(test, digits = 2)), "%")), 
+                  nudge_x = .4, 
+                  segment.size = .5, 
+                  show.legend = FALSE)+
+  theme_void()+theme(plot.title = element_text(hjust = 0.5))
+
+Bonds <- read_csv(paste0("Merged_2016_Processed.csv"))
+
+Bonds <- filter(Bonds, IsPowerSector)
+
+
+chart2<-function(){
+  Data<-filter(Bonds, HasCapacity, !HasGreenBond,`Total Capacity`!=0)%>%
+    select(`2022CoalCap%`)
+  Data<-c(sum(Data$`2022CoalCap%`>0.2288)*100/14,100-sum(Data$`2022CoalCap%`>0.2288)*100/14)
+  Data <- as.numeric(Data)
+  sector <- c('Achieved IEA 2DS Scenario','Not Achieved IEA 2DS Scenario')
+  Targ <- as.data.frame(cbind(sector,Data))
+  Targ$Data <- as.numeric(Targ$Data)
+  Targ$pos = (cumsum(c(0, Targ$Data)) + c(Targ$Data / 2, .01))[1:nrow(Targ)]
+  caption <- paste(strwrap("Above graph depicts % of greenbond issuers, , which achieves IEA 2Â°C Scenario (2DS)'s
+                           carbon emission target released by renewables (as of 2016 Q4)."))
+  plot<-ggplot(Targ, aes(x="", y=Data, fill=sector))+
+    geom_col(color = 'white', width = 1,
+             position = position_stack(reverse = TRUE), 
+             show.legend = TRUE)+
+    labs(title="% of Issuers Met IEA 2D Renewable Scenario in 2016 (Green Bond)",
+         caption = caption)+
+    coord_polar("y")+
+    geom_text_repel(aes(x = 1.4, y = pos,label = paste0(sector, " ", sprintf("%0.1f", round(Data, digits = 1)), "%")), 
+                    nudge_x = 1, 
+                    segment.size = .5, 
+                    show.legend = FALSE)+
+    theme_void()+theme(plot.title = element_text(hjust = 0.6))+
+    theme(plot.title = element_text(size=20,face="bold"))+
+    theme(legend.title = element_blank(),
+          legend.text = element_text(size=19),
+          plot.margin = margin(1,1,1,1,"cm"),
+          legend.position = "bottom",
+          plot.caption = element_text(size = 10, hjust = 0.5))+
+    scale_fill_manual(values = c("forestgreen","gray15"))
+  print(plot)
+  return(plot)
+} 
+chart3<-function(){
+  Data<-filter(Bonds, HasCapacity,HasGreenBond,`Total Capacity`!=0)%>%
+    mutate("delta"=((`2022CoalCap%`*`2022 Total Capacity`)-(`Total Capacity`*`CoalCap%`))/`Total Capacity`) %>%
+    select(delta)
+  Data[is.na(Data)] <- 0
+  Data<-c(sum(Data$delta>0.003)*100/14,100-sum(Data$delta>0.003)*100/14)
+  Data <- as.numeric(Data)
+  sector <- c('Achieved Capacity Addition under IEA 2DS Scenario','Not Achieved Capacity Addition under IEA 2DS Scenario')
+  Targ <- as.data.frame(cbind(sector,Data))
+  Targ$Data <- as.numeric(levels(Targ$Data))[Targ$Data]
+  Targ$pos = (cumsum(c(0, Targ$Data)) + c(Targ$Data / 2, .01))[1:nrow(Targ)]
+  caption=paste(strwrap("Above graph depicts % of non-green-bond issuers, which achieves IEA 2Â°C Scenario (2DS)'s
+                        carbon emission target released by renewables (as of 2016 Q4)."))
+  plot<-ggplot(Targ, aes(x="", y=Data, fill=sector))+
+    geom_col(color = 'white', width = 1,
+             position = position_stack(reverse = TRUE), 
+             show.legend = TRUE)+
+    labs(title="% of Issuers Met IEA 2D Renewable Scenario in 2016 (Non-Green Bond)",
+         caption = caption)+
+    coord_polar("y")+
+    geom_text_repel(aes(x = 1.4, y = pos,label = paste0(sector, " ", sprintf("%0.2f", round(Data, digits = 2)), "%")), 
+                    nudge_x = 1, 
+                    segment.size = .5, 
+                    show.legend = FALSE)+
+    theme_void()+theme(plot.title = element_text(hjust = 0.6))+
+    theme(plot.title = element_text(size=20,face="bold"))+
+    theme(legend.title = element_blank(),
+          legend.text = element_text(size=19),
+          plot.margin = margin(1,1,1,1,"cm"),
+          plot.caption = element_text(size = 10, hjust = 0.5),
+          legend.position = "bottom")+
+    scale_fill_manual(values = c("forestgreen","gray"))
+  print(plot)
+  return(plot)
+} 
+
+
+
+
+Bonds <- read_csv(paste0("Merged_2016_Processed.csv"))
+Bonds <- filter(Bonds, IsPowerSector) 
+
+Data<-filter(Bonds, HasCapacity, HasGreenBond,`Total Capacity`!=0)%>%
+  select(DebtTicker,`2022 Total Capacity`,`2022CoalCap%`, `2022GasCap%`,`2022HydroCap%`,`2022NuclearCap%`,`2022OilCap%`,`2022RenewablesCap%`,
+         `Total Capacity`,`CoalCap%`, `GasCap%`,`HydroCap%`,`NuclearCap%`,`OilCap%`,`RenewablesCap%`) %>%
+  mutate("coal"=((`2022CoalCap%`*`2022 Total Capacity`)-(`Total Capacity`*`CoalCap%`))/`Total Capacity`,
+         "gas"=((`2022GasCap%`*`2022 Total Capacity`)-(`Total Capacity`*`GasCap%`))/`Total Capacity`,
+         "hydro"=((`2022HydroCap%`*`2022 Total Capacity`)-(`Total Capacity`*`HydroCap%`))/`Total Capacity`,
+         "nuc"=((`2022NuclearCap%`*`2022 Total Capacity`)-(`Total Capacity`*`NuclearCap%`))/`Total Capacity`,
+         "oil"=((`2022OilCap%`*`2022 Total Capacity`)-(`Total Capacity`*`OilCap%`))/`Total Capacity`,
+         "ren"=((`2022RenewablesCap%`*`2022 Total Capacity`)-(`Total Capacity`*`RenewablesCap%`))/`Total Capacity`)
+Data[is.na(Data)] <- 0
+a<-sum(Data$coal,Data$gas,Data$hydro,Data$nuc,Data$oil,Data$ren)
+
+mean(Data$coal)
+mean(Data$gas)
+mean(Data$hydro)
+mean(Data$nuc)
+mean(Data$oil)
+mean(Data$ren))
+
+chart1<-function(){
+  Data<-filter(Bonds, HasCapacity, !HasGreenBond)%>%
+    select(DebtTicker,`2022 Total Capacity`,`2022CoalCap%`, `2022GasCap%`,`2022HydroCap%`,`2022NuclearCap%`,`2022OilCap%`,`2022RenewablesCap%`)
+  Data[222,]<-c('name',sum(Data$`2022 Total Capacity`),mean(Data$`2022CoalCap%`),mean(Data$`2022GasCap%`),
+               mean(Data$`2022HydroCap%`),mean(Data$`2022NuclearCap%`),mean(Data$`2022OilCap%`),mean(Data$`2022RenewablesCap%`))
+  Data <- Data[15,-c(1,2)]
+  Data <- as.numeric(Data)
+  sector <- c('Coal','Gas','Hydro','Nuclear','Oil','Renewable')
+  eneg <- as.data.frame(cbind(sector,Data))
+  eneg$Data <- as.numeric(eneg$Data)
+  eneg$pos = (cumsum(c(0, eneg$Data)) + c(eneg$Data / 2, .01))[1:nrow(eneg)]
+  caption <- paste(strwrap("Power sector exposure (%) of Green Bonds in 2016"))
+  plot<-ggplot(eneg, aes(x="", y=Data, fill=sector))+
+    geom_col(color = 'white', width = 1,
+             position = position_stack(reverse = TRUE), 
+             show.legend = TRUE)+
+    labs(title="Sector Allocation Capacity in 2016 (Green Bond)",
+         caption = caption)+
+    coord_polar("y")+
+    geom_text_repel(aes(x = 1.4, y = pos,label = paste0(sector, " ", sprintf("%0.1f", round(Data, digits = 1)), "%")), 
+                    nudge_x = .6, 
+                    segment.size = .5, 
+                    show.legend = FALSE,
+                    size = 6)+
+    theme_void()+theme(plot.title = element_text(hjust = 0.6))+
+    theme(plot.title = element_text(size=20,face="bold"))+
+    theme(legend.title = element_blank(),
+          legend.text = element_text(size=19),
+          plot.margin = margin(1,1,1,1,"cm"),
+          plot.caption = element_text(size = 10, hjust = 0.5),
+          legend.position = "bottom")+
+    scale_fill_manual(values = c("gray15","coral3","dodgerblue2","goldenrod3","grey47","forestgreen"))
+  print(plot)
+  return(plot)
+}
+Me:
+###Figure1
+Fig_1<-Merged_2016_Processed %>%
+  filter(HasCapacity) %>%
+  select(DebtTicker, `RenewablesCap%`,`% of Market Renewable`,HasGreenBond,`Total Outstanding Bonds`,`Total Capacity`,`% Green of All Green`) %>%
+  mutate("Renewable per allMarket"=(`RenewablesCap%`*`Total Capacity`)/sum(`Total Capacity`)) %>%
+  rbind(c("Capacity Weighted Avg",weighted.mean(Fig_1$`RenewablesCap%`,Fig_1$`Renewable per allMarket`)))
+
+Fig_1$`RenewablesCap%` <- as.numeric(Fig_1$`RenewablesCap%`)
+Fig_1$`Renewable per allMarket` <- as.numeric(Fig_1$`Renewable per allMarket`)
+
+Fig_1<-rbind(Fig_1,c("Avg",mean(Fig_1[c(1:203),]$`RenewablesCap%`)))
+Fig_1$`RenewablesCap%` <- as.numeric(Fig_1$`RenewablesCap%`)
+Fig_1$`% Green of All Green`<-as.numeric(Fig_1$`% Green of All Green`)
+Fig_1$`% Green of All Green`<-Fig_1$`% Green of All Green`/100
+Fig_1<-rbind(Fig_1,c("Bond Weighted Avg",weighted.mean(Fig_1[c(1:203),]$`RenewablesCap%`,Fig_1[c(1:203),]$`% Green of All Green`)))
+
+Fig_1$Cat <- ifelse(Fig_1$HasGreenBond,1, 0)
+Fig_1[204,]$Cat <- 2
+Fig_1[205,]$Cat <- 3
+Fig_1[206,]$Cat <- 4
+Fig_1$Cat<-as.factor(Fig_1$Cat)
+
+
+test <- Fig_1
+
+
+Fig_1$`RenewablesCap%`<-as.numeric(Fig_1$`RenewablesCap%`)
+Fig_1$DebtTicker<-as.factor(Fig_1$DebtTicker)
+Fig_1$`Total Outstanding Bonds`<-as.numeric(Fig_1$`Total Outstanding Bonds`)
+Fig_1$Width<-(Fig_1$`RenewablesCap%`)*(Fig_1$`Total Outstanding Bonds`/sum(Fig_1$`Total Outstanding Bonds`,na.rm = TRUE))
+Fig_1$w<-0
+Fig_1[which(Fig_1$Width<0.0005),]$w<-1
+Fig_1[which(Fig_1$Width>=0.0005&Fig_1$Width<0.0086),]$w<-3
+Fig_1[which(Fig_1$Width>=0.015&Fig_1$Width<0.1),]$w<-  5
+Fig_1[which(Fig_1$Width>=0.10&Fig_1$Width<0.77),]$w<-  7
+Fig_1[which(Fig_1$Width>1),]$w<-  9
+
+Fig_1$Width<-as.numeric(Fig_1$Width)
+
+ggplot(data=Fig_1[c(1:203),], aes(x = reorder(DebtTicker,-`RenewablesCap%`), y= `RenewablesCap%`,fill=Cat)) +
+  geom_bar(stat="identity")+
+  geom_hline(yintercept=26.8,linetype=1, color = "red")+
+  geom_hline(yintercept=22.2,linetype=2, color = "black")+
+  geom_hline(yintercept=10.7,linetype=3, color = "blue")+
+  geom_text(aes(8,28,label = "Average", vjust = -1))+
+  geom_text(aes(18,22,label = "Bond Capacity Weight Avg", vjust=-1))+
+  geom_text(aes(20,10,label = "Bond Outstanding Weight Avg", vjust = -1))+
+  xlab("DebtTicker")+
+  ylab("% Renewable Share in Total Capacity of Bond Issuers in 2016")+
+  ggtitle("Use of Proceed Green Bond vs. Standard Bond Renewable Share in Total Capacity in 2016")+
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())+
+  scale_fill_manual(values=c("grey","green4"),name="",labels = c("Non Green Bond","Green Bond"))
+
+#scale_x_continuous(name="type", breaks=unique(df$summ), labels=c("a","b","c","d","e"))
+#fix the column width
+
+
+
+#add green for green bond, average, cap average, and bond average
+
+
+
+
+###Figure2.1
+additionChange<-Merged_2016_Processed %>%
+  select(DebtTicker,`RenewablesCap%`,`2022RenewablesCap%`,`Total Capacity`,`2022 Total Capacity`,HasGreenBond) %>%
+  mutate("delta"=((`2022RenewablesCap%`*`2022 Total Capacity`/100)-(`Total Capacity`*`RenewablesCap%`/100))/(`2022 Total Capacity`-`Total Capacity`),
+         "capchange" =(`2022 Total Capacity`-`Total Capacity`)) %>%
+  arrange(-delta)
+
+
+additionChange$Cat <- ifelse(additionChange$HasGreenBond,1, 0)
+additionChange$Cat<-as.factor(additionChange$Cat)
+additionChange$delta<- replace(additionChange$delta, is.na(additionChange$delta), 0)
+additionChange$DebtTicker<-as.factor(additionChange$DebtTicker)
+
+additionChange$right = cumsum(additionChange$capchange)
+additionChange$left = additionChange$right - additionChange$capchange
+
+
+
+#check if additionChange$delta is num
+ggplot(data=subset(additionChange,delta!=0),aes(ymin=0))+
+  geom_rect(aes(xmin = left, xmax = right, ymax = delta, 
+                fill = HasGreenBond, color = "black"), size = .1)+
+  labs(x="Power Sector DebtTicker (weighted by size of the capacity addition)",
+       y="% Share of Renewables of Total Capacity Addition")+
+  ggtitle("Renewable Share of Total Power Capacity Addition between 2016 -2022")+
+  scale_fill_manual(values=c("grey","green4"),name="",labels = c("Non Green Bond","Green Bond"))+
+  scale_color_manual(values = c("black"), guide = FALSE)
+
+###this graph eliminate all 0s
+
+
+
+###Figure2.2
+Change<-Merged_2016_Processed %>%
+  select(DebtTicker,`RenewablesCap%`,`2022RenewablesCap%`,HasGreenBond,`Total Capacity`,`2022 Total Capacity`) %>%
+  mutate("%RenewablesChangeBy2022"=`2022RenewablesCap%` -`RenewablesCap%`,
+         "capchange" =`2022 Total Capacity`-`Total Capacity`) %>%
+  arrange(-`%RenewablesChangeBy2022`)
+
+Change$Cat <- ifelse(Change$HasGreenBond,1, 0)
+mean_stand<-mean(Change[which(Change$Cat==0),]$`%RenewablesChangeBy2022`)
+mean_green<-mean(Change[which(Change$Cat==1),]$`%RenewablesChangeBy2022`)
+
+RenChange<-subset(Change,`%RenewablesChangeBy2022`!=0)
+
+RenChange$Cat<-as.factor(RenChange$Cat)
+RenChange$DebtTicker<-as.factor(RenChange$DebtTicker)
+
+RenChange$right = cumsum(RenChange$capchange)
+RenChange$left = RenChange$right - RenChange$capchange
+
+
+ggplot(data=RenChange ,aes(ymin=0))+
+  geom_rect(aes(xmin = left, xmax = right, ymax =`%RenewablesChangeBy2022` , 
+                fill = Cat, color = "black"), size = .1)+
+  xlab("DebtTicker")+
+  ylab("Expected Change of Renewable Shares from 2017 to 2022")+
+  ggtitle("Use of Proceed Green Bond vs. Standard Bond Expected Change Renewable Share between 20
+ggplot(new_m_2, aes(x=variable, y=value, color=Iss.Yr)) + 
+  geom_point(alpha=0.5,size=2) +
+  geom_line(aes(group = DebtTicker))+
+  scale_x_discrete(name="Change of Renewable Capacity in 1 to 5 Year Window") +
+  scale_y_continuous(name="% Rewewable of Issuers' Total Capacity", labels=percent) +
+  scale_color_manual(values = c("springgreen", "springgreen2", "springgreen4"))+
+  ggtitle("Change in Renewable Capacity of Green Bond Issuers (in 2014-2016 )")+
+  facet_wrap(~Iss.Yr)+
+  theme_minimal()+
+  theme(plot.title = element_text(face="bold"))+
+  theme(legend.title=element_text(face="bold"),legend.text=element_text(size=12,hjust = 0.5))+
+  theme(strip.text.x = element_text(size = 12, colour = "black", angle = 0))+
+  theme(axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size = 10, hjust = 0.5))+
+  guides(color=guide_legend("Issued Year"))
+
+#geom_line(data = dummy2, aes(x= Yr, y=Z))+

@@ -1,0 +1,241 @@
+library(readxl)
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(ggrepel)
+
+
+UoP <- read_excel(paste0( "BBG LABELLED USE OF PROCEED GREEN BONDS 2017Q4.xlsx"))
+# right away look at how many rows in, so we know
+nrow(UoP) 
+
+### 1 - always change column names (non alpha-numeric into a ".") 
+names(UoP) <- gsub("[^[:alnum:]]",".", names(UoP))
+
+### 2 - next, I reduce to only the columns I actually need
+UoP <- UoP %>% select(Eqty.Ticker, Ticker, Issuer, Iss.Dt, Mty)
+
+### 3 - check the columns for their data type - make sure we don't have any unintended factors, etc
+str(UoP)
+
+### 4 - Change/mutate any columns as needed
+### (In general, when I change original column data I like to make a new column and not
+### overwrite the old one, but not always)
+
+### We need  change the date string into an actual Date so that we're sure that the >= or <=
+### works as intended - we can just overwrite the old column for this
+library(lubridate)
+UoP$Iss.Dt <- as.Date(as.character(UoP$Iss.Dt), format="%Y%m%d", origin="1899-12-31")
+UoP$Mty <- as.Date(as.character(UoP$Mty), format="%Y%m%d", origin="1899-12-31")
+UoP$Iss.Yr <- year(UoP$Iss.Dt)
+
+### we need to create a DebtTicker column
+UoP <- UoP %>% mutate(DebtTicker = gsub( " .*$", "", Ticker))
+### gsub() function replaces all matches of a string
+
+
+### 5 - Now that we have all the right columns, I Check for missing data so I know if any
+### rows are "invalid" - ie will not be able to be used for the analysis
+any(is.na(UoP$DebtTicker)) # this says at least one row is NA
+
+###any()  Given a set of logical vectors, is at least one of the values true?
+
+subset(UoP, is.na(DebtTicker)) # check it out
+
+UoP <- subset(UoP, !is.na(DebtTicker)) # this is a bogus row, so remove it
+
+any(is.na(UoP$DebtTicker)) # double check no duplicates
+nrow(UoP) # double check we only removed the intended # of rows
+
+### this is another column we need - check if any missing data
+any(is.na(UoP$Iss.Dt)) # this looks OK
+
+### if there were other rows with a missing Issue Date, for example, depending on the
+### project and size of the data set I might either remove them right away, or, if
+### was important to keep track I would create another column called "is.INvalid" or
+### similar and then mark those as 1.  I could filter on that in the future
+
+### 6 - now check for totally duplicate rows.  Sometimes this happens
+UoP <- UoP %>% 
+distinct() # this removes any indentical rows  distinct() is under dplyr
+nrow(UoP) # check how many rows are left - removed about 13
+
+### check for any duplicates in "primary key".  
+any(duplicated(UoP$Ticker))
+
+### and this made me realize that we can have a single "bond"(ie Ticker) with multiple
+### "issues" - often each issue is the same 8% bond and has the same
+### maturity date (for exampe), but each Issue has different issue date.  See below.
+subset(UoP, Ticker=="AMPILT 8 10/17/36")
+### I am not 100% sure how to handle this yet, but I know i want a primary key
+### to track each issue.
+### I can tell that the combo of Ticker and Iss.Dt does this
+UoP %>% distinct(Ticker, Iss.Dt) %>% nrow()
+### so for now, just add an "Issue.ID" to each row
+UoP$Issue.ID <- rownames(UoP) # just a number from 1 to nrow
+
+### 7 - now look at the data a bit before I filter any rows so that we know what we
+### have coming in.  This helps us spot any data weirdness, outliers, etc.
+
+### overall
+### ungroup() When it is ungrouped, any further mutations called on it would not use the previous grouping for aggregate statistics.
+UoP %>% summarise(num.issues=n(), num.bonds=n_distinct(Ticker), num.issuer=n_distinct(DebtTicker))
+
+### num issues/bonds/issuers, by year
+UoP %>% group_by(Iss.Yr) %>% summarise(num.issues=n(), num.bonds=n_distinct(Ticker), num.issuer=n_distinct(DebtTicker))
+
+### num securities by DebtTicker
+### !! this result to me is a bit weird -- SCTY has issued 114 green bonds? So they are 
+### really impacting our sample.  We should investigate
+UoP %>% group_by(DebtTicker) %>% summarise(num.issues=n(), num.bonds=n_distinct(Ticker)) %>% arrange(desc(num.issues))
+###arrange row by variables
+
+### num securities by DEbtTicker, Year
+UoP %>% group_by(DebtTicker, Iss.Yr) %>% summarise(num.issues.yr=n()) %>% 
+  mutate(num.issues.tot=sum(num.issues.yr)) %>% arrange(desc(num.issues.tot)) 
+
+
+### 8 - now filter to the rows that I need
+UoP <- UoP %>% filter(Iss.Dt <= as.Date("2016-12-31"), Iss.Dt >= as.Date("2013-01-01"))
+### check the data again after filtering so I know new # of issues, bonds, and issuers.
+UoP %>% summarise(num.issues=n(), num.bonds=n_distinct(Ticker), num.issuer=n_distinct(DebtTicker))
+UoP %>% group_by(Iss.Yr) %>% summarise(num.issues=n(), num.bonds=n_distinct(Ticker), num.issuer=n_distinct(DebtTicker))
+
+### Great, now this data set is ready.
+
+
+### ###########################################################################
+### Asset-Level Data
+### ###########################################################################
+
+### Load and do same process as above
+ald <- read.csv(paste0("2017-08-28powermasterDebt.csv"), stringsAsFactors = FALSE) 
+nrow(ald)
+names(ald) <- gsub("[^[:alnum:]]",".", names(ald))
+
+str(ald)
+
+### Don't need to make sany changes to existing columns in this case
+### but i am adding one that will help when I merge this. A flag
+ald$has.ALD <- 1
+
+### Check for missing data.  In particular, check on columns that will be used in a merge
+### missing data or blanks can cause unexpected issues 
+any(is.na(ald$DebtTicker))
+any(ald$DebtTicker=="") # blanks
+any(is.na(ald$Year))
+
+
+### ###########################################################################
+### MERGE 
+### ###########################################################################
+
+### We want a left join here explicitly
+### so all rows in UoP will be retained, whether they match with ald or not
+
+###which data you want to include the full info, then you can decide on right or left join.
+
+gb.ald <- left_join(UoP, ald, by="DebtTicker")
+nrow(gb.ald) ### we expected 1 row in UoP to match many in ald, so this should be more than num rows in UoP
+# this number should be the same as the value in UoP before the merge, no more or no less
+# this is how we know we didn't "drop" any tickers
+n_distinct(gb.ald$DebtTicker) # looks good - 158 again
+
+### now check how mnay matched with ALD
+### if the flag is NA then the row it didn't match with any ald - just change to 0/1 flag
+gb.ald$has.ALD <- ifelse(is.na(gb.ald$has.ALD), 0, 1)
+###ifelse(test, yes, no)
+
+
+### and now look at the data again
+gb.ald %>% group_by(has.ALD) %>% summarise(num.rows=n(),
+                                           num.issues=n_distinct(Issue.ID),
+                                           num.bonds=n_distinct(Ticker),
+                                           num.issuers=n_distinct(DebtTicker))
+
+###distinct(A)-> print the distinct column of A
+
+missing.gb.issuers <- gb.ald %>% filter(has.ALD==0) %>% distinct(Issuer, DebtTicker)
+write.csv(missing.gb.issuers, file=paste0(DATA.PATH.OUT, "missing-gb-issuers.csv"), row.names=FALSE)
+
+### now filter by ones we do have ALD for
+gb.ald <- gb.ald %>% filter(has.ALD==1)
+### check out the data again
+
+gb.ald %>% group_by(has.ALD,Iss.Yr) %>% summarise(num.rows=n(),
+                                                  num.issues=n_distinct(Issue.ID),
+                                                  num.bonds=n_distinct(Ticker),
+                                                  num.issuers=n_distinct(DebtTicker))
+
+
+###############################################################
+#Calculation
+##############################################################
+### detach("package:reshape", unload=TRUE)   -------------this is to uninstall a package in R
+
+Total<-gb.ald %>%
+  group_by(Year, DebtTicker)%>%
+  summarise("Total.Capacity" = sum(Production)) %>%
+  ungroup()
+
+Energy<-gb.ald %>%
+  filter(Technology=="Renewables") %>%
+  group_by(Year, DebtTicker)%>%
+  summarise("Energy.Capacity" = sum(Production)) %>%
+  ungroup()
+
+
+EvMerged <- select(gb.ald, DebtTicker,Year, Iss.Yr) %>%
+  merge(Energy_Merged, by = c("DebtTicker","Year"), all.x = TRUE) %>%
+  filter(Year<2023) %>%
+  unique()
+
+
+
+
+
+
+Cap_2016 <- filter(EvMerged, Year == 2016) %>%
+  select(DebtTicker, Energy.Capacity, Total.Capacity,Iss.Yr) 
+Cap_2017 <- filter(EvMerged, Year == 2017) %>%
+  select(DebtTicker,Iss.Yr,Energy.Capacity, Total.Capacity)
+Company_Diff <- merge(Cap_2016, Cap_2017,by.x =c("DebtTicker","Iss.Yr"),by.y =c("DebtTicker","Iss.Yr"))%>%
+  rename("2016.ECap"=Energy.Capacity.x,"2017.ECap"=Energy.Capacity.y,
+         "2016.TCap"=Total.Capacity.x,"2017.TCap"=Total.Capacity.y)
+
+bridge<-merge(Company_Diff,Company_Diff_1,by.x =c("DebtTicker","Iss.Yr"),by.y =c("DebtTicker","Iss.Yr"))
+
+New_Merged_2<-merge(bridge,Company_Diff_3,by.x =c("DebtTicker","Iss.Yr"),by.y =c("DebtTicker","Iss.Yr")) %>%
+  mutate("1.Yr"=`2017.ECap`/`2017.TCap`,
+         "2.Yr"=`2018.ECap`/`2018.TCap`,
+         "3.Yr"=`2019.ECap`/`2019.TCap`,
+         "4.Yr"=`2020.ECap`/`2020.TCap`,
+         "5.Yr"=`2021.ECap`/`2021.TCap`,
+         "6.Yr"=`2022.ECap`/`2022.TCap`)
+
+
+library(reshape)
+##melt() is to put columns into a variable (which contains different levels)
+new_m_2<-melt(New_Merged_2, id=c("DebtTicker","Iss.Yr")) %>%
+  filter(Iss.Yr=="2014"|Iss.Yr=="2015"|Iss.Yr=="2016") %>%
+  filter(variable=="1.Yr"|variable=="2.Yr"|variable=="3.Yr"|variable=="4.Yr"|variable=="5.Yr"|variable=="6.Yr") 
+
+new_m_2$Iss.Yr <- as.factor(new_m_2$Iss.Yr)
+summary(new_m_2$value)
+
+###replace all NA to 0, calculation will turn NA if the rows have NA
+new_m_2$value[is.na(new_m_2$value)] <- 0
+
+
+
+
+
+
+
+
+
+
+
+
+

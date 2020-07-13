@@ -1,0 +1,164 @@
+class Fraction:
+    def __init__(self, top, bottom):
+        self.num = top
+        self.den = bottom
+        common = gcd(abs(top), abs(bottom))
+        self.num = top//common 
+        self.den = bottom//common
+    def show(self):
+        print(self.num,'/', self.den)
+    
+    # 1.
+    def getNum(self):
+        return(self.num)
+    def getDen(self):
+        return(self.den)
+        
+    # 2.
+    def __add__(self, other):
+        new_num = (self.num* other.den) + (self.den * other.num)
+        new_den = self.den * other.den
+        return(Fraction(new_num, new_den))
+       
+        # common = gcd(new_num, new_den)
+        # return Fraction(new_num // common, new_den // common)
+        
+    # 3.
+    def __sub__(self, other):
+        new_num = (self.num* other.den) - (self.den * other.num)
+        new_den = self.den * other.den
+        common = gcd(abs(num), abs(den))
+        return(Fraction(new_num, new_den))
+        
+    def __mul__(self, other):
+        new_num = self.num * other.num
+        new_den = self.den * other.den
+        common = gcd(abs(num), abs(den))
+        return(Fraction(new_num, new_den)
+        
+    def __truediv__(self, other):
+        num = self.num * other.den
+        den = self.den * other.num
+        common = gcd(abs(num), abs(den))
+        return Fraction(num // common, den // common)
+        
+        
+    # 4
+    def __gt__(self, other):
+         self_new = self.num * other.den
+         other_new = other.num * self.den
+         return(self_new > other_new)
+         
+    def __ge__(self, other):
+         self_new = self.num * other.den
+         other_new = other.num * self.den
+         return(self_new >= other_new)
+         
+         
+    def __lt__(self, other):
+         self_new = self.num * other.den
+         other_new = other.num * self.den
+         return(self_new < other_new)
+         
+         
+    def __le__(self, other):
+         self_new = self.num * other.den
+         other_new = other.num * self.den
+         return(self_new <= other_new)
+    
+    def __ne__(self, other):
+         self_new = self.num * other.den
+         other_new = other.num * self.den
+         return(self_new != other_new)
+# 1. Implement the simple methods getNum and getDen that will return the numerator and denominator of a fraction.
+
+# 2. In many ways it would be better if all fractions were maintained in lowest terms right from the start. Modify the constructor for the Fraction class so that 
+# GCD is used to reduce fractions immediately. Notice that this means the __add__ function no longer needs to reduce. Make the necessary modifications.
+
+# 3. Implement the remaining simple arithmetic operators (__sub__, __mul__, and __truediv__).
+
+# 4. Implement the remaining relational operators (__gt__, __ge__, __lt__, __le__, and __ne__)
+
+# 5. Modify the constructor for the fraction class so that it checks to make sure that the numerator and denominator are both integers. 
+# If either is not an integer the constructor should raise an exception.
+
+# 6. In the definition of fractions we assumed that negative fractions have a negative numerator and a positive denominator. 
+# Using a negative denominator would cause some of the relational operators to give incorrect results. 
+# In general, this is an unnecessary constraint. Modify the constructor to allow the user to pass a negative denominator so that 
+# all of the operators continue to work properly.
+
+# 7. Research the __radd__ method. How does it differ from __add__? When is it used? Implement __radd__.
+
+# 8. Repeat the last question but this time consider the __iadd__ method.
+
+# 9. Research the __repr__ method. How does it differ from __str__? When is it used? Implement __repr__.
+
+# 10. Research other types of gates that exist (such as NAND, NOR, and XOR). Add them to the circuit hierarchy. How much additional coding did you need to do?
+
+# 11. The most simple arithmetic circuit is known as the half-adder. Research the simple half-adder circuit. Implement this circuit.
+
+# 12. Now extend that circuit and implement an 8 bit full-adder.
+
+# 13. The circuit simulation shown in this chapter works in a backward direction. In other words, given a circuit, the output is produced by working back through the input values, which in turn cause other outputs to be queried. This continues until external input lines are found, at which point the user is asked for values. Modify the implementation so that the action is in the forward direction; upon receiving inputs the circuit produces an output.
+
+# 14. Design a class to represent a playing card. Now design a class to represent a deck of cards. Using these two classes, implement a favorite card game.
+
+# 15. Find a Sudoku puzzle in the local newspaper. Write a program to solve the puzzle.
+
+
+from gcd import gcd
+
+
+class Fraction:
+
+    # #2 solution for exercise 2 from 1.7 module chap-1
+    def __init__(self, top, bottom):
+        # #5 solution for exercise 5 from 1.7 module - chap-1
+        if not isinstance(top, int):
+            valErr = ValueError("{} is not integer".format(top))
+            raise valErr
+        if not isinstance(bottom, int):
+            valErr = ValueError("{} is not integer".format(bottom))
+            raise valErr
+        # #6 solution for exercise 6 from 1.7 module - chap-1
+        if top < 0 and bottom < 0:
+            top = abs(top)
+            bottom = abs(bottom)
+        elif bottom < 0:
+            top = -top
+            bottom = abs(bottom)
+        common = gcd(abs(top), abs(bottom))
+        self.num = top // common
+        self.den = bottom // common
+
+    def __str__(self):
+        return str(self.num) + "/" + str(self.den)
+
+    # #9 solution for exercise 9 from 1.7 module chap-1
+    def __repr__(self):
+        return '%s(%r)' % (self.__class__, self.__str__())
+
+    def show(self):
+        print (self.num, "/", self.den)
+
+    # #7 solution for exercise 7 from 1.7 module chap-1
+    def __radd__(self, other):
+        if other == 0:
+            return self
+        else:
+            other = Fraction(other, 1)
+            return self.__add__(other)
+
+    # #8 solution for exercise 7 from 1.7 module chap-1
+    def __iadd__(self, other):
+        if isinstance(other, int):
+            other = Fraction(other, 1)
+        return self.__add__(other)
+
+    def __eq__(self, other):
+        first_num = self.num * other.den
+        second_num = self.den * other.num
+        return first_num == second_num
+
+    
+   

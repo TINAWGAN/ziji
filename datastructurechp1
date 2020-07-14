@@ -1,10 +1,28 @@
+def gcd(a, b):
+    if a == 0 or b == 0:
+        return(None)
+    if n < m:
+        n, m = m, n
+    while n %m !=0:
+        old_n = n
+        old_m = m
+        n = old_m
+        m = old_n % old_m
+    return(m)
+
 class Fraction:
     def __init__(self, top, bottom):
-        self.num = top
-        self.den = bottom
-        common = gcd(abs(top), abs(bottom))
-        self.num = top//common 
-        self.den = bottom//common
+    # 5
+        if isinstance(top, int):
+            raise(ValueError({''is not an integer}.format(top)))
+        if isinstance(bottom, int):
+            raise(ValueError({''is not an integer}.format(top)))
+    # 6
+        self.num = abs(top)
+        self.den = abs(bottom)
+        common = gcd(top, bottom)
+        self.num = self.num//common 
+        self.den = self.den//common
     def show(self):
         print(self.num,'/', self.den)
     
@@ -70,6 +88,31 @@ class Fraction:
          self_new = self.num * other.den
          other_new = other.num * self.den
          return(self_new != other_new)
+    
+    # 7
+    def __radd__(self, other):
+        if other == 0:
+            return(self)
+        else:
+            other = Fraction(other,1)
+            return(self.__add(other))
+            
+            
+    # 8
+    def __iradd__(self, other):
+        if isinstance(other, in):
+            other = Fraction(other, 1)
+        return(self.__add__(other))
+    
+    def __str__(self):
+        return(str(self.num) + '/' + str(self.den))
+        
+   # 9
+    def __repr__(self):
+        return('%s(%r)') % (self.__class__, self.__str__())
+        
+    
+        
 # 1. Implement the simple methods getNum and getDen that will return the numerator and denominator of a fraction.
 
 # 2. In many ways it would be better if all fractions were maintained in lowest terms right from the start. Modify the constructor for the Fraction class so that 
@@ -99,66 +142,43 @@ class Fraction:
 
 # 12. Now extend that circuit and implement an 8 bit full-adder.
 
-# 13. The circuit simulation shown in this chapter works in a backward direction. In other words, given a circuit, the output is produced by working back through the input values, which in turn cause other outputs to be queried. This continues until external input lines are found, at which point the user is asked for values. Modify the implementation so that the action is in the forward direction; upon receiving inputs the circuit produces an output.
+# 13. The circuit simulation shown in this chapter works in a backward direction. In other words, given a circuit, the output is produced 
+# by working back through the input values, which in turn cause other outputs to be queried. This continues until external input lines are found, at which point the user is asked for values. Modify the implementation so that the action is in the forward direction; upon receiving inputs the circuit produces an output.
 
 # 14. Design a class to represent a playing card. Now design a class to represent a deck of cards. Using these two classes, implement a favorite card game.
-
+class card(object):
+        suit_names = ["Clubs", "Diamonds", "Hearts", "Spades"]
+        rank_names = [None, "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"]
+        def __init__(self, suit, rank):
+            self.suit = suit
+            self.rank = rank
+            
+        def __str__(self, suit, rank):
+            return(('%s in %s') %(self.suit, self.rank))
+class deck(object):
+        def __init__(self):
+                self.card = []
+                for card in range(4):
+                    for rank in range(14):
+                        card = card(suit, rank)
+                        self.card.append(card)
+        def __str__(self):
+                res = []
+                for i in self.card:
+                    res.append(str(i))       
+                return(','.join(res))
+                
+        def size(self):
+                return(len(self.cards))
+                
+                
+        def addcards(self, new_cards):
+                self.card.append(new_cards)
+        def removecard(self, remove_card):
+                self.card.remove(remove_card)
+            
+            
+        def shuffle(self):
+                random.shuffle(self.card)
+                
 # 15. Find a Sudoku puzzle in the local newspaper. Write a program to solve the puzzle.
-
-
-from gcd import gcd
-
-
-class Fraction:
-
-    # #2 solution for exercise 2 from 1.7 module chap-1
-    def __init__(self, top, bottom):
-        # #5 solution for exercise 5 from 1.7 module - chap-1
-        if not isinstance(top, int):
-            valErr = ValueError("{} is not integer".format(top))
-            raise valErr
-        if not isinstance(bottom, int):
-            valErr = ValueError("{} is not integer".format(bottom))
-            raise valErr
-        # #6 solution for exercise 6 from 1.7 module - chap-1
-        if top < 0 and bottom < 0:
-            top = abs(top)
-            bottom = abs(bottom)
-        elif bottom < 0:
-            top = -top
-            bottom = abs(bottom)
-        common = gcd(abs(top), abs(bottom))
-        self.num = top // common
-        self.den = bottom // common
-
-    def __str__(self):
-        return str(self.num) + "/" + str(self.den)
-
-    # #9 solution for exercise 9 from 1.7 module chap-1
-    def __repr__(self):
-        return '%s(%r)' % (self.__class__, self.__str__())
-
-    def show(self):
-        print (self.num, "/", self.den)
-
-    # #7 solution for exercise 7 from 1.7 module chap-1
-    def __radd__(self, other):
-        if other == 0:
-            return self
-        else:
-            other = Fraction(other, 1)
-            return self.__add__(other)
-
-    # #8 solution for exercise 7 from 1.7 module chap-1
-    def __iadd__(self, other):
-        if isinstance(other, int):
-            other = Fraction(other, 1)
-        return self.__add__(other)
-
-    def __eq__(self, other):
-        first_num = self.num * other.den
-        second_num = self.den * other.num
-        return first_num == second_num
-
-    
-   

@@ -119,3 +119,7 @@ def moveTower(height, fromPole, toPole, withPole):
         moveTower(height - 1, fromPole, toPole, withPole)
         moveDisk(fromPole, toPole)
         moveTower(height - 1, withPole, toPole, fromPole)
+
+
+def moveDisk(fp, tp):
+        print("moving disk from",fp,"to",tp)

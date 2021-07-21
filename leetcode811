@@ -32,15 +32,12 @@ The answer output can be returned in any order.
 
 class Solution:
     def subdomainVisits(self, cpdomains: List[str]) -> List[str]:
-      d = defaultdict(int)
+      d = {}
       for s in cpdomains:
-        cnt, s = s.split()
-        cnt = int(cnt)
-        d[s] += cnt
-        pos = s.find('.') + 1
-        while pos >0:
-          d[s[pos:]] += cnt
-          pos = s.find('.', pos) +1
-      for x, i in d.items():
-        yield f'{i} {x}'
+        c = s.replace('.', ' ').split()
+        n = int(c[0])
+        for i in range(len(s)-1, 0,-1):
+            t = ".".join(s[i:])
+            d[t] = d[t] + n if t in d else n
+      return [str(d[i]) +" "+ i for i in d]
         
